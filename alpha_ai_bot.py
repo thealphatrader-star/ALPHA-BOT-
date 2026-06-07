@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 
 import pytz
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes, JobQueue
 
 # ── Quotex API ───────────────────────────────────────────────────────────────
 QUOTEX_AVAILABLE = False
