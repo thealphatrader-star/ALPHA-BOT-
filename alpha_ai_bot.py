@@ -13,26 +13,28 @@ from datetime import datetime, timedelta
 
 import pytz
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes, JobQueue
+from telegram.ext import Application, CommandHandler, ContextTypes
 
 # ── Quotex API ───────────────────────────────────────────────────────────────
 QUOTEX_AVAILABLE = False
 try:
-    import importlib
     import subprocess, sys
-    subprocess.run([sys.executable, "-m", "pip", "install", "-q",
-        "git+https://github.com/cleitonleonel/pyquotex.git"],
-        capture_output=True, timeout=120)
+    subprocess.run(
+        [sys.executable, "-m", "pip", "install", "-q",
+         "git+https://github.com/cleitonleonel/pyquotex.git"],
+        capture_output=True, timeout=120
+    )
     from quotexapi.stable_api import Quotex
     QUOTEX_AVAILABLE = True
     print("✅ quotexapi loaded successfully")
 except Exception as e:
     print(f"⚠️  quotexapi not available: {e}")
+
 # ════════════════════════════════════════════════════════════════
 #  YOUR CONFIGURATION  ← update these
 # ════════════════════════════════════════════════════════════════
 
-BOT_TOKEN       = "8637593088:AAF_o8IMHI2KqwIXmj2ecyHXczfHInhkEaU"   # ← paste your new token
+BOT_TOKEN       = "8637593088:AAF_o8IMHI2KqwIXmj2ecyHXczfHInhkEaU"
 QUOTEX_EMAIL    = "tloontop01@gmail.com"
 QUOTEX_PASSWORD = "Zxcvbnm0@"
 QUOTEX_IS_DEMO  = True
@@ -484,10 +486,10 @@ async def broadcast_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("✅ Broadcast sent!", parse_mode="Markdown")
 
 # ════════════════════════════════════════════════════════════════
-#  STARTUP
+#  STARTUP HOOK — runs after event loop is ready
 # ════════════════════════════════════════════════════════════════
 
-async def post_init(app):
+async def post_init(application: Application) -> None:
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     print("  Connecting to Quotex...")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -499,21 +501,18 @@ async def post_init(app):
     else:
         print("  ⚠️  Quotex not connected — will retry each signal")
 
-    asyncio.create_task(signal_loop(app.bot))
+    asyncio.create_task(signal_loop(application.bot))
 
 # ════════════════════════════════════════════════════════════════
 #  MAIN
 # ════════════════════════════════════════════════════════════════
 
-async def post_init(application):
-    asyncio.create_task(signal_loop(application.bot))
-
-async def main():
-    print("——————————————————————————")
+def main():
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     print("  ALPHA AI SIGNALS — Starting")
     print(f"  Account : {'Demo' if QUOTEX_IS_DEMO else 'Live'}")
     print(f"  Channel : {CHANNEL_ID}")
-    print("——————————————————————————")
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
     application = (
         Application.builder()
@@ -532,7 +531,7 @@ async def main():
     application.add_error_handler(error_handler)
 
     print("  Bot is running... Press Ctrl+C to stop\n")
-    await application.run_polling(drop_pending_updates=True)
+    application.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
