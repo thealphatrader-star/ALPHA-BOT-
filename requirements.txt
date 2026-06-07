@@ -4,4 +4,4 @@ websockets
 requests
 httpx
 aiohttp
-pyquotex
+git+https://github.com/cleitonleonel/pyquotex.git
