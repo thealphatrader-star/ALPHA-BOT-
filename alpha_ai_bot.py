@@ -18,12 +18,16 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 # ── Quotex API ───────────────────────────────────────────────────────────────
 QUOTEX_AVAILABLE = False
 try:
+    import importlib
+    import subprocess, sys
+    subprocess.run([sys.executable, "-m", "pip", "install", "-q",
+        "git+https://github.com/cleitonleonel/pyquotex.git"],
+        capture_output=True, timeout=120)
     from quotexapi.stable_api import Quotex
     QUOTEX_AVAILABLE = True
     print("✅ quotexapi loaded successfully")
-except ImportError:
-    print("⚠️  quotexapi not available — results will show UNAVAILABLE")
-
+except Exception as e:
+    print(f"⚠️  quotexapi not available: {e}")
 # ════════════════════════════════════════════════════════════════
 #  YOUR CONFIGURATION  ← update these
 # ════════════════════════════════════════════════════════════════
