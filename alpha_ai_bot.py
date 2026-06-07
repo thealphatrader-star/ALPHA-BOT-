@@ -512,7 +512,7 @@ async def main():
     print(f"  Channel : {CHANNEL_ID}")
     print("——————————————————————————")
 
-    application = Application.builder().token(BOT_TOKEN).updater(None).build()
+    application = Application.builder().token(BOT_TOKEN).build()
     app = application
 
     app.add_handler(CommandHandler("start",      start))
