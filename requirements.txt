@@ -4,4 +4,3 @@ websockets
 requests
 httpx
 aiohttp
-quotexapi
