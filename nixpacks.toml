@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["python312"]
+
+[phases.install]
+cmds = [
+  "pip install python-telegram-bot==20.7 pytz websockets requests httpx aiohttp",
+  "pip install git+https://github.com/cleitonleonel/pyquotex.git"
+]
+
+[start]
+cmd = "python alpha_ai_bot.py"
