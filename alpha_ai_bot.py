@@ -512,12 +512,7 @@ def main():
     print(f"  Channel : {CHANNEL_ID}")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
-    app = (
-        Application.builder()
-        .token(BOT_TOKEN)
-        .post_init(post_init)
-        .build()
-    )
+   application = Application.builder().token(BOT_TOKEN).updater(None).build()
 
     app.add_handler(CommandHandler("start",      start))
     app.add_handler(CommandHandler("stop",       stop_cmd))
