@@ -505,14 +505,15 @@ async def post_init(app):
 #  MAIN
 # ════════════════════════════════════════════════════════════════
 
-def main():
-    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+async def main():
+    print("——————————————————————————")
     print("  ALPHA AI SIGNALS — Starting")
     print(f"  Account : {'Demo' if QUOTEX_IS_DEMO else 'Live'}")
     print(f"  Channel : {CHANNEL_ID}")
-    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print("——————————————————————————")
 
-   application = Application.builder().token(BOT_TOKEN).updater(None).build()
+    application = Application.builder().token(BOT_TOKEN).updater(None).build()
+    app = application
 
     app.add_handler(CommandHandler("start",      start))
     app.add_handler(CommandHandler("stop",       stop_cmd))
@@ -524,8 +525,8 @@ def main():
     app.add_error_handler(error_handler)
 
     print("  Bot is running... Press Ctrl+C to stop\n")
-    app.run_polling(drop_pending_updates=True)
-
+    asyncio.create_task(signal_loop(app.bot))
+    await application.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
