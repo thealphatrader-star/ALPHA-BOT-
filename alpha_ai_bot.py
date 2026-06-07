@@ -28,7 +28,7 @@ except ImportError:
 #  YOUR CONFIGURATION  ← update these
 # ════════════════════════════════════════════════════════════════
 
-BOT_TOKEN       = "YOUR_NEW_BOT_TOKEN_HERE"   # ← paste your new token
+BOT_TOKEN       = "8637593088:AAH3xKLNuYrtqd3wqR1x4tn2OSnxlbCzaFs"   # ← paste your new token
 QUOTEX_EMAIL    = "tloontop01@gmail.com"
 QUOTEX_PASSWORD = "Zxcvbnm0@"
 QUOTEX_IS_DEMO  = True
