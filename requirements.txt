@@ -1,6 +1,7 @@
-python-telegram-bot[job-queue]==20.7
+python-telegram-bot==20.7
 pytz
-websockets==12.0
+websockets
 requests
 httpx
 aiohttp
+pyquotex
