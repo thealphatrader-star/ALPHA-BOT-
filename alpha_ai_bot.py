@@ -505,6 +505,9 @@ async def post_init(app):
 #  MAIN
 # ════════════════════════════════════════════════════════════════
 
+async def post_init(application):
+    asyncio.create_task(signal_loop(application.bot))
+
 async def main():
     print("——————————————————————————")
     print("  ALPHA AI SIGNALS — Starting")
@@ -512,20 +515,23 @@ async def main():
     print(f"  Channel : {CHANNEL_ID}")
     print("——————————————————————————")
 
-    application = Application.builder().token(BOT_TOKEN).build()
-    app = application
+    application = (
+        Application.builder()
+        .token(BOT_TOKEN)
+        .post_init(post_init)
+        .build()
+    )
 
-    app.add_handler(CommandHandler("start",      start))
-    app.add_handler(CommandHandler("stop",       stop_cmd))
-    app.add_handler(CommandHandler("status",     status_cmd))
-    app.add_handler(CommandHandler("pairs",      pairs_cmd))
-    app.add_handler(CommandHandler("setpairs",   setpairs_cmd))
-    app.add_handler(CommandHandler("reconnect",  reconnect_cmd))
-    app.add_handler(CommandHandler("broadcast",  broadcast_cmd))
-    app.add_error_handler(error_handler)
+    application.add_handler(CommandHandler("start",      start))
+    application.add_handler(CommandHandler("stop",       stop_cmd))
+    application.add_handler(CommandHandler("status",     status_cmd))
+    application.add_handler(CommandHandler("pairs",      pairs_cmd))
+    application.add_handler(CommandHandler("setpairs",   setpairs_cmd))
+    application.add_handler(CommandHandler("reconnect",  reconnect_cmd))
+    application.add_handler(CommandHandler("broadcast",  broadcast_cmd))
+    application.add_error_handler(error_handler)
 
     print("  Bot is running... Press Ctrl+C to stop\n")
-    asyncio.create_task(signal_loop(app.bot))
     await application.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
