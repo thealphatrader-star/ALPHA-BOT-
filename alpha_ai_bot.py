@@ -1,8 +1,8 @@
 import subprocess, sys
 subprocess.run([
-    sys.executable, "-m", "pip", "install",
+    sys.executable, "-m", "pip", "install", "--quiet",
     "git+https://github.com/cleitonleonel/pyquotex.git"
-], check=False)
+], capture_output=True)
 
 """
 ╔══════════════════════════════════════════════════════════════╗
