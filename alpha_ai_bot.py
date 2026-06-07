@@ -1,9 +1,3 @@
-import subprocess, sys
-subprocess.run([
-    sys.executable, "-m", "pip", "install", "--quiet",
-    "git+https://github.com/cleitonleonel/pyquotex.git"
-], capture_output=True)
-
 """
 ╔══════════════════════════════════════════════════════════════╗
 ║           ALPHA AI SIGNALS — Pocket Option Signal Bot        ║
@@ -22,31 +16,32 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 # ── Quotex API ───────────────────────────────────────────────────────────────
+QUOTEX_AVAILABLE = False
 try:
     from quotexapi.stable_api import Quotex
     QUOTEX_AVAILABLE = True
+    print("✅ quotexapi loaded successfully")
 except ImportError:
-    QUOTEX_AVAILABLE = False
-    print("⚠️  quotexapi not found — run: pip3 install git+https://github.com/cleitonleonel/pyquotex.git")
+    print("⚠️  quotexapi not available — results will show UNAVAILABLE")
 
 # ════════════════════════════════════════════════════════════════
-#  YOUR CONFIGURATION
+#  YOUR CONFIGURATION  ← update these
 # ════════════════════════════════════════════════════════════════
 
-BOT_TOKEN       = "8637593088:AAH3xKLNuYrtqd3wqR1x4tn2OSnxlbCzaFs"
+BOT_TOKEN       = "YOUR_NEW_BOT_TOKEN_HERE"   # ← paste your new token
 QUOTEX_EMAIL    = "tloontop01@gmail.com"
 QUOTEX_PASSWORD = "Zxcvbnm0@"
-QUOTEX_IS_DEMO  = True                    # True = Demo account
+QUOTEX_IS_DEMO  = True
 ADMIN_ID        = "7571089858"
 CHANNEL_ID      = -1003734299929
 USERS_FILE      = "users.txt"
 PAIRS_FILE      = "pairs.txt"
 
 # Signal timing
-SIGNAL_GAP_MIN  = 110    # min seconds between signals
-SIGNAL_GAP_MAX  = 140    # max seconds between signals
-CANDLE_WAIT     = 65     # wait for candle to close (60s + 5s buffer)
-MTG_WAIT        = 62     # wait for MTG candle
+SIGNAL_GAP_MIN  = 110
+SIGNAL_GAP_MAX  = 140
+CANDLE_WAIT     = 65
+MTG_WAIT        = 62
 
 # ════════════════════════════════════════════════════════════════
 #  CONSTANTS
@@ -55,7 +50,6 @@ MTG_WAIT        = 62     # wait for MTG candle
 IST = pytz.timezone("Asia/Kolkata")
 logging.basicConfig(level=logging.WARNING)
 
-# (Display Label, Quotex symbol)
 DEFAULT_PAIRS = [
     ("EUR/USD (OTC)", "EURUSD-OTC"),
     ("GBP/USD (OTC)", "GBPUSD-OTC"),
@@ -82,7 +76,6 @@ PAIR_MAP = {
 
 DIRECTIONS = [("UP 🔝", "call"), ("DOWN 🔻", "put")]
 
-# Global Quotex client
 quotex_client = None
 
 # ════════════════════════════════════════════════════════════════
@@ -129,13 +122,11 @@ def save_pairs(keys: list):
 # ════════════════════════════════════════════════════════════════
 
 async def broadcast(bot, text: str):
-    # Send to channel
     try:
         await bot.send_message(chat_id=CHANNEL_ID, text=text, parse_mode="Markdown")
     except Exception as e:
         print(f"  [CHANNEL WARN] {e}")
 
-    # Send to all subscribers
     for uid in list(load_users()):
         try:
             await bot.send_message(chat_id=uid, text=text, parse_mode="Markdown")
@@ -154,7 +145,7 @@ def get_next_entry() -> datetime:
     return entry
 
 # ════════════════════════════════════════════════════════════════
-#  QUOTEX CONNECTION — EMAIL + PASSWORD AUTO LOGIN
+#  QUOTEX CONNECTION
 # ════════════════════════════════════════════════════════════════
 
 async def ensure_quotex_connected() -> bool:
@@ -164,7 +155,6 @@ async def ensure_quotex_connected() -> bool:
         return False
 
     try:
-        # Already connected
         if quotex_client is not None:
             try:
                 if quotex_client.check_connect():
@@ -172,8 +162,7 @@ async def ensure_quotex_connected() -> bool:
             except:
                 pass
 
-        print("  [Quotex] Logging in with email/password...")
-
+        print("  [Quotex] Logging in...")
         quotex_client = Quotex(
             email=QUOTEX_EMAIL,
             password=QUOTEX_PASSWORD,
@@ -197,15 +186,10 @@ async def ensure_quotex_connected() -> bool:
         return False
 
 # ════════════════════════════════════════════════════════════════
-#  GET CANDLE RESULT FROM QUOTEX OTC
+#  GET CANDLE RESULT
 # ════════════════════════════════════════════════════════════════
 
 async def get_result_quotex(symbol: str, direction: str) -> str:
-    """
-    Fetches real Quotex OTC candle and returns WIN / LOSS / TIE / UNAVAILABLE
-    symbol    = e.g. "EURUSD-OTC"
-    direction = "call" or "put"
-    """
     global quotex_client
 
     if not await ensure_quotex_connected():
@@ -214,36 +198,21 @@ async def get_result_quotex(symbol: str, direction: str) -> str:
     try:
         print(f"  [Quotex] Checking candle: {symbol}...")
 
-        # Fetch last 5 minutes of 1-min candles
-        candles = await asyncio.get_event_loop().run_in_executor(
-            None,
-            lambda: quotex_client.get_candles(
-                asset=symbol,
-                end_from_time=time.time(),
-                offset=300,   # 5 minutes of data
-                period=60,    # 1 minute candles
-            )
+        candles = await quotex_client.get_candles(
+            asset=symbol,
+            end_from_time=time.time(),
+            offset=300,
+            period=60,
         )
 
         if not candles or len(candles) < 2:
-            print(f"  [Quotex] ⚠️  Not enough candles (got {len(candles) if candles else 0})")
             return "UNAVAILABLE"
 
-        # candles[-1] = still forming NOW  ← never use this
-        # candles[-2] = last FULLY closed  ← use this ✅
         candle = candles[-2]
-
         o = float(candle["open"])
         c = float(candle["close"])
 
-        if c > o:
-            color = "GREEN 🟢"
-        elif c < o:
-            color = "RED 🔴"
-        else:
-            color = "DOJI ⚪"
-
-        print(f"  [Quotex] {symbol} | Open:{o:.5f} Close:{c:.5f} | {color}")
+        print(f"  [Quotex] {symbol} | Open:{o:.5f} Close:{c:.5f}")
 
         if c > o and direction == "call":   return "WIN"
         if c < o and direction == "put":    return "WIN"
@@ -252,7 +221,7 @@ async def get_result_quotex(symbol: str, direction: str) -> str:
 
     except Exception as e:
         print(f"  [Quotex ERROR] {e}")
-        quotex_client = None   # force reconnect next time
+        quotex_client = None
         return "UNAVAILABLE"
 
 # ════════════════════════════════════════════════════════════════
@@ -333,32 +302,26 @@ async def signal_loop(bot):
 
             print(f"[#{n}] {pd_label} | {dd_label} | Entry:{entry.strftime('%H:%M:%S')} IST | Wait:{int(wait)}s")
 
-            # ── Send signal ─────────────────────────────────────────
             await broadcast(bot, build_signal(pd_label, dd_label, entry, n))
             await asyncio.sleep(wait)
 
-            # ── Wait for candle to fully close ───────────────────────
             print(f"  Waiting {CANDLE_WAIT}s for candle to close...")
             await asyncio.sleep(CANDLE_WAIT)
 
-            # ── Check Quotex OTC candle result ───────────────────────
             result = await get_result_quotex(pa_sym, da_act)
             print(f"  Result: {result}")
 
             if result == "LOSS":
-                # ── 1 MTG step ───────────────────────────────────────
-                print(f"  LOSS — MTG: waiting {MTG_WAIT}s for next candle...")
+                print(f"  LOSS — MTG: waiting {MTG_WAIT}s...")
                 await asyncio.sleep(MTG_WAIT)
-
                 mtg_result = await get_result_quotex(pa_sym, da_act)
                 print(f"  MTG Result: {mtg_result}\n")
-
                 if mtg_result == "WIN":
                     await broadcast(bot, build_result("WIN", mtg=True))
                 else:
-                    await broadcast(bot, build_result("LOSS", mtg=False))
+                    await broadcast(bot, build_result("LOSS"))
             else:
-                await broadcast(bot, build_result(result, mtg=False))
+                await broadcast(bot, build_result(result))
 
             n  += 1
             gap = random.randint(SIGNAL_GAP_MIN, SIGNAL_GAP_MAX)
@@ -384,7 +347,7 @@ async def error_handler(update, context):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_user(str(update.effective_user.id))
-    name     = update.effective_user.first_name or "Trader"
+    name = update.effective_user.first_name or "Trader"
     qx_status = "🟢 Quotex OTC Live" if quotex_client else "🟡 Connecting..."
 
     await update.message.reply_text(
@@ -425,10 +388,10 @@ async def stop_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 async def status_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    pairs   = load_pairs()
-    users   = load_users()
-    qx_ok   = quotex_client is not None
-    qx_txt  = "🟢 Connected — OTC data live" if qx_ok else "🔴 Reconnecting..."
+    pairs  = load_pairs()
+    users  = load_users()
+    qx_ok  = quotex_client is not None
+    qx_txt = "🟢 Connected — OTC data live" if qx_ok else "🔴 Reconnecting..."
 
     await update.message.reply_text(
         f"👑 *ALPHA AI — Status* 👑\n\n"
@@ -475,10 +438,7 @@ async def setpairs_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     invalid = [k for k in keys if k not in PAIR_MAP]
 
     if not valid:
-        await update.message.reply_text(
-            "❌ No valid pairs. Use /setpairs to see available.",
-            parse_mode="Markdown"
-        )
+        await update.message.reply_text("❌ No valid pairs.", parse_mode="Markdown")
         return
 
     save_pairs(valid)
@@ -501,13 +461,9 @@ async def reconnect_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if success:
         await update.message.reply_text("✅ Quotex reconnected!", parse_mode="Markdown")
     else:
-        await update.message.reply_text(
-            "❌ Reconnection failed.\nCheck email/password in config.",
-            parse_mode="Markdown"
-        )
+        await update.message.reply_text("❌ Reconnection failed.", parse_mode="Markdown")
 
 async def broadcast_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Admin only — send custom message to all subscribers."""
     if str(update.effective_user.id) != ADMIN_ID:
         await update.message.reply_text("⛔ Admin only.", parse_mode="Markdown")
         return
@@ -559,13 +515,13 @@ def main():
         .build()
     )
 
-    app.add_handler(CommandHandler("start",       start))
-    app.add_handler(CommandHandler("stop",        stop_cmd))
-    app.add_handler(CommandHandler("status",      status_cmd))
-    app.add_handler(CommandHandler("pairs",       pairs_cmd))
-    app.add_handler(CommandHandler("setpairs",    setpairs_cmd))
-    app.add_handler(CommandHandler("reconnect",   reconnect_cmd))
-    app.add_handler(CommandHandler("broadcast",   broadcast_cmd))
+    app.add_handler(CommandHandler("start",      start))
+    app.add_handler(CommandHandler("stop",       stop_cmd))
+    app.add_handler(CommandHandler("status",     status_cmd))
+    app.add_handler(CommandHandler("pairs",      pairs_cmd))
+    app.add_handler(CommandHandler("setpairs",   setpairs_cmd))
+    app.add_handler(CommandHandler("reconnect",  reconnect_cmd))
+    app.add_handler(CommandHandler("broadcast",  broadcast_cmd))
     app.add_error_handler(error_handler)
 
     print("  Bot is running... Press Ctrl+C to stop\n")
