@@ -1,3 +1,9 @@
+import subprocess, sys
+subprocess.run([
+    sys.executable, "-m", "pip", "install",
+    "git+https://github.com/cleitonleonel/pyquotex.git"
+], check=False)
+
 """
 ╔══════════════════════════════════════════════════════════════╗
 ║           ALPHA AI SIGNALS — Pocket Option Signal Bot        ║
