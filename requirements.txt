@@ -1,0 +1,3 @@
+python-telegram-bot
+pytz
+git+https://github.com/cleitonleonel/pyquotex.git
