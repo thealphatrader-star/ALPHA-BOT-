@@ -33,7 +33,7 @@ except ImportError:
 #  YOUR CONFIGURATION
 # ════════════════════════════════════════════════════════════════
 
-BOT_TOKEN       = "8637593088:AAEIowjrka5lkV8mW7SBBPwcERUd11MeWEw"
+BOT_TOKEN       = "8637593088:AAH3xKLNuYrtqd3wqR1x4tn2OSnxlbCzaFs"
 QUOTEX_EMAIL    = "tloontop01@gmail.com"
 QUOTEX_PASSWORD = "Zxcvbnm0@"
 QUOTEX_IS_DEMO  = True                    # True = Demo account
